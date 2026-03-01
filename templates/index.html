@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catch the Emoji</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7fbff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #2a4d8f;
+      margin-bottom: 10px;
+    }
+    .card {
+      max-width: 460px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    .target {
+      font-size: 48px;
+      margin: 10px 0;
+    }
+    .score {
+      font-size: 20px;
+      margin: 8px 0;
+      color: #1e7b36;
+    }
+    .message {
+      min-height: 28px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #b14f00;
+      margin: 10px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .emoji-btn {
+      font-size: 34px;
+      padding: 10px;
+      border: 2px solid #d6e4ff;
+      border-radius: 12px;
+      background: #eef4ff;
+      cursor: pointer;
+      transition: transform 0.06s ease;
+    }
+    .emoji-btn:active {
+      transform: scale(0.96);
+    }
+    .controls {
+      margin-top: 14px;
+    }
+    button#resetBtn {
+      padding: 8px 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: #2a4d8f;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Catch the Emoji 🎯</h1>
+    <p>Tap the matching emoji!</p>
+
+    <div>Find this emoji:</div>
+    <div id="target" class="target">❓</div>
+
+    <div id="score" class="score">Score: 0</div>
+    <div id="message" class="message"></div>
+
+    <div id="grid" class="grid"></div>
+
+    <div class="controls">
+      <button id="resetBtn">Reset Game</button>
+    </div>
+  </div>
+
+  <script>
+    const targetEl = document.getElementById('target');
+    const scoreEl = document.getElementById('score');
+    const messageEl = document.getElementById('message');
+    const gridEl = document.getElementById('grid');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function drawBoard(target, choices) {
+      targetEl.textContent = target;
+      gridEl.innerHTML = '';
+
+      choices.forEach((emoji) => {
+        const btn = document.createElement('button');
+        btn.className = 'emoji-btn';
+        btn.textContent = emoji;
+        btn.addEventListener('click', async () => {
+          const response = await fetch('/click', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji })
+          });
+          const data = await response.json();
+          scoreEl.textContent = `Score: ${data.score}`;
+          messageEl.textContent = data.message;
+          drawBoard(data.target, data.choices);
+        });
+        gridEl.appendChild(btn);
+      });
+    }
+
+    async function loadState() {
+      const response = await fetch('/state', { method: 'POST' });
+      const data = await response.json();
+      scoreEl.textContent = `Score: ${data.score}`;
+      messageEl.textContent = '';
+      drawBoard(data.target, data.choices);
+    }
+
+    resetBtn.addEventListener('click', async () => {
+      const response = await fetch('/reset', { method: 'POST' });
+      const data = await response.json();
+      scoreEl.textContent = `Score: ${data.score}`;
+      messageEl.textContent = 'Game reset!';
+      drawBoard(data.target, data.choices);
+    });
+
+    loadState();
+  </script>
+</body>
+</html>
